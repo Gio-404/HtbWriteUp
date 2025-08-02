@@ -3,11 +3,10 @@
 > 记录我在 [HackTheBox](https://www.hackthebox.com/) 上完成的靶机渗透测试过程。  
 > 每一篇 Writeup 都是一次实战复盘，从信息收集到权限提升，完整还原攻击链。
 
-![HTB Badge](https://htb-mp-prod-public-storage.s3.eu-central-1.amazonaws.com/badges/1826301.png)
-
+![HTB Badge](https://www.hackthebox.com/badge/image/1826301)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Machines Count](https://img.shields.io/badge/machines-%20total%20completed-blueviolet) <!-- 可手动更新数量 -->
+![Machines Count](https://img.shields.io/badge/machines-1-blueviolet)
 
 ---
 
