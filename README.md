@@ -31,8 +31,8 @@
 .
 ├── Easy/               # 简单难度靶机
 ├── Medium/             # 中等难度靶机
-├── Hard/               # 高难度靶机
-└── Insane/             # 极高难度靶机
+├── Hard/               # 高等难度靶机
+└── Insane/             # 疯狂难度靶机
 ```
 ## 🚀 如何使用
 
@@ -78,8 +78,8 @@
 
 欢迎通过以下方式联系我，讨论技术问题或交流 HTB 解题思路：
 
-- **GitHub**: [@你的用户名](https://github.com/Gio-404)  
-- **Email**: [你的邮箱@example.com](mailto:weibo0920@gmail.com)  
+- **GitHub**: [@Gio-404](https://github.com/Gio-404)  
+- **Email**: [weibo0920@gmail.com](mailto:weibo0920@gmail.com)  
 - **HTB Profile**: [https://app.hackthebox.com/users/Gio404](https://app.hackthebox.com/users/Gio404)
 
 > 🔁 **持续更新中**，争取周更。  
