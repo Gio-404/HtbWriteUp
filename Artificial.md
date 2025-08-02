@@ -36,7 +36,7 @@
 ![](/Artificial/9.jpg)
 使用他们提供的dockerfile构建环境（我最开始没使用dockerfile构建的环境，生成的h5文件上传上去之后一直拿不到反弹shell。）
 
-### 构造攻击payload ###
+### 开始攻击 ###
 
 `docker build -t artificial .`
 
@@ -146,3 +146,7 @@
 ![](/Artificial/35.jpg)
 
 输入`dump 5020abe4 root/root.txt`可以查看到root的flag
+
+![](/Artificial/36.jpg)
+
+### 收工 ###
