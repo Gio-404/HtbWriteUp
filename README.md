@@ -7,7 +7,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Machines Count](https://img.shields.io/badge/machines-1-blueviolet)
+![Machines Count](https://img.shields.io/badge/machines-2-blueviolet)
 
 ---
 
