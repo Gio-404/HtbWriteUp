@@ -8,8 +8,7 @@
 #### 探测到500端口
 ![](./Expressway/2.png)
 
-#### 进行详细探测
-#### `nmap -sU -sC -sV -O -A -p500 10.10.11.87`
+#### 进行详细探测 `nmap -sU -sC -sV -O -A -p500 10.10.11.87`
 ![](./Expressway/3.png)
 
 #### 查一下isakmp是什么服务，以前没见过
