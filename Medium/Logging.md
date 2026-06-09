@@ -39,7 +39,7 @@
 #### `bloodhound-python -u 'wallace.everette' -p 'Welcome2026@' -d 'logging.htb' -c All --zip --dns-tcp -ns 10.129.42.196`
 ![](./Logging/15.png)
 
-#### svc_recovery账号对msa_health$账号有完全的控制权限，msa账号又属于REMOTE MANAGEMENT USERS组。到这里攻击路径其实已经清晰了，但是svc账号属于Protected组，关于这个组的信息如下：
+#### svc_recovery账号对msa_health$账号有完全的控制权限，msa账号又属于REMOTE MANAGEMENT USERS组。svc账号属于Protected组，关于这个组的信息如下：
 ![](./Logging/13.png)
 
 #### 目前还没有svc账号的密码，这里卡了很久……最后还是看了Writeup。才反应过来密码是有规律的，初始账号有年份2026，svc_recovery的密码中也有年份2025。将Em3rg3ncyPa\$\$2025改成Em3rg3ncyPa\$\$2026
@@ -89,7 +89,7 @@ $task.Definition
 #### 在C:\Users\jaylee.clifton\Documents\Tickets目录中找到一个html，保存到本地查看
 ![](./Logging/26.png)
 
-#### DNS服务器还没更新，wsus.logging.htb是WSUS的服务器，每2分钟运行一个定时任务，那么攻击路径就大致清晰了：伪造DNS➡计划任务执行➡获取恶意文件
+#### DNS服务器还没更新，wsus.logging.htb是WSUS的服务器，每2分钟运行一个定时任务，攻击路径：伪造DNS➡计划任务执行➡获取恶意文件
 
 #### msa_health$就有更新dns记录的权限
 ![](./Logging/27.png)
@@ -103,7 +103,7 @@ $task.Definition
 #### 使用msa_health$进行证书枚举
 `certipy-ad find -u 'msa_health$@logging.htb' -hashes ':603fc24ee01a9409f83c9d1d701485c5' -target DC01.logging.htb -dc-ip 10.129.42.196`
 
-#### IT组的用户可以注册UpdateSrv证书
+#### IT组的用户可以注册UpdateSrv证书，但是EKU不是传统的Client认证，是Server认证需要绕一下
 ![](./Logging/29.png)
 
 #### 通过反弹shell拿到的jaylee.clifton就是IT组的用户
