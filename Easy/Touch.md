@@ -81,3 +81,17 @@
 ![](./Touch/33.png)
 ## 总结 ##
 #### 靶场本身很简单，但是也想到会写了这么长一篇，主要学习内容还是后面的提权过程吧。拓展了提权思路。 ####
+#### 提权要点 ####
+- 拥有 MySQL 高权限凭据：root 或具备 CREATE FUNCTION、FILE 权限的账户。
+
+- 确认 MySQL 服务运行权限：Windows 下看 mysqld.exe 是否以 NT AUTHORITY\SYSTEM 运行。tasklist /v 显示 N/A 往往是当前 Shell 权限不足，可改用 sys_eval('whoami') 直接验证。
+
+- 确认插件目录可写：SHOW VARIABLES LIKE 'plugin_dir'; 拿到路径，再用 icacls 检查当前用户是否有写权限。
+
+- 确认 secure_file_priv 的值：SHOW VARIABLES LIKE 'secure_file_priv';
+
+- 空值：不限制导入导出目录，可以用 INTO DUMPFILE 写 DLL 到任意可写路径。
+
+- 指向特定路径：只能在该目录下写文件，若 plugin_dir 不在其中，SQL 写文件这条路被堵死。
+
+- NULL：完全禁止文件导入导出，必须改用已有 Shell 直接上传 DLL。
